@@ -1,7 +1,7 @@
 
 # 🤖 Smart Web Answer Agent
 
-An intelligent web agent built using Streamlit, LangChain, and Groq's LLM to answer user questions using real-time web search and summarization.
+This project is a Streamlit-based intelligent web agent that uses Google Search + Web Scraping + Groq LLM to answer user queries in real time, with proper source citations.
 
 ---
 
@@ -32,11 +32,10 @@ An intelligent web agent built using Streamlit, LangChain, and Groq's LLM to ans
 
 ## 📸 Screenshots
 
-![App Screenshot](https://i.imgur.com/n3QKpYh.png)
-
+![image](https://github.com/user-attachments/assets/2aeb3018-ba3c-46ff-8f90-20ade512a443)
 ---
 
 ## 🔗 Deployed Link
 
-👉 [Launch App on Streamlit Cloud](https://your-app-link.streamlit.app)
+👉 https://websearchagent-de9zh5xnfelfjfwq6fbpqn.streamlit.app/
 
