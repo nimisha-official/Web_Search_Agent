@@ -8,21 +8,21 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load secret values from .env
 load_dotenv()
 groq_api_key = os.getenv("GROQ_API_KEY")
 
-llm = ChatGroq(api_key=groq_api_key, model_name="mixtral-8x7b-32768")
+# Initialize Groq LLM
+llm = ChatGroq(api_key=groq_api_key, model_name="mistral-saba-24b")
 
 # 1️⃣ --- Custom Tool Class ---
 class SearchSummarizerTool(BaseTool):
-    name = "web_search_summarizer"
-    description = "Searches the web for a query, summarizes top articles, and returns a final answer with sources."
+    name:str= "web_search_summarizer"
+    description:str= "Searches the web for a query, summarizes top articles, and returns a final answer with sources."
 
     def _run(self, query: str):
         try:
             # Step 1: Google search
-            urls = [url for url in search(query, num_results=5)]
+            urls = [url for url in search(query, num_results=3)]
 
             # Step 2: Scrape + summarize each URL
             summaries = []
@@ -43,14 +43,31 @@ class SearchSummarizerTool(BaseTool):
 
             # Step 3: Final answer generation
             combined = "\n\n".join([f"Source: {s['url']}\n{s['summary']}" for s in summaries])
-            final_prompt = f"Using the following summaries, answer the question:\n\n{combined}\n\nQuestion: {query}"
+            # Add fallback guidance in case content is weak
+            final_prompt = f"""
+            You are an intelligent assistant helping summarize search results.
+
+            Your job is to:
+            - Extract relevant points from the article summaries that directly answer the user's question.
+            - Format the answer as clear and concise bullet points.
+            - If the summaries do not contain enough relevant information, say:
+            "Insufficient Info. Please refer to the provided sources for more information."
+
+            --- Article Summaries ---
+            {combined}
+
+            --- User Question ---
+            {query}
+
+            --- Your Response (in bullet points or fallback message) ---
+            """
             final_answer = llm.invoke(final_prompt).content.strip()
 
             # Step 4: Format answer with sources
-            formatted = f"**Answer:**\n{final_answer}\n\n**Sources:**\n"
-            for s in summaries:
-                formatted += f"- {s['url']}\n"
-            return formatted
+            return {
+                "answer": final_answer,
+                "sources": [s["url"] for s in summaries]
+            }
 
         except Exception as e:
             return f"Tool failed: {e}"
@@ -62,20 +79,21 @@ class SearchSummarizerTool(BaseTool):
 tool_instance = SearchSummarizerTool()
 tools = [tool_instance]
 
-#initialize agent
 agent = initialize_agent(tools=tools, llm=llm, agent="zero-shot-react-description", verbose=False)
 
 # 3️⃣ --- Streamlit UI ---
 st.set_page_config(page_title="Smart Web Agent", layout="centered")
-st.title("🤖 Smart Web Answer Agent")
-st.caption("Ask anything. It will search and answer with source links.")
+st.title("🤖 Smart Web Answer Agent 🤖")
+st.caption("Ask anything. It will search, summarize, and answer with source links.")
 
-query = st.text_input("🔍 Enter your question")
+query = st.text_input("👇 Enter your question", placeholder="Type and hit Enter...")
 
-if st.button("Get Answer"):
-    if not query:
-        st.warning("Please enter a question.")
-    else:
-        with st.spinner("Working on it..."):
-            result = agent.run(query)
-        st.markdown(result)
+if query:  # This will trigger when user presses Enter
+    with st.spinner("🔍 Searching and summarizing..."):
+        tool_instance = SearchSummarizerTool()
+        result = tool_instance._run(query)
+
+    st.markdown(f"### ✅ Answer\n{result['answer']}")
+    st.markdown("### 🔗 Sources")
+    for i, url in enumerate(result["sources"], start=1):
+        st.markdown(f"{i}. [{url}]({url})")
