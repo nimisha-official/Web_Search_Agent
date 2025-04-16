@@ -62,3 +62,20 @@ class SearchSummarizerTool(BaseTool):
 tool_instance = SearchSummarizerTool()
 tools = [tool_instance]
 
+#initialize agent
+agent = initialize_agent(tools=tools, llm=llm, agent="zero-shot-react-description", verbose=False)
+
+# 3️⃣ --- Streamlit UI ---
+st.set_page_config(page_title="Smart Web Agent", layout="centered")
+st.title("🤖 Smart Web Answer Agent")
+st.caption("Ask anything. It will search and answer with source links.")
+
+query = st.text_input("🔍 Enter your question")
+
+if st.button("Get Answer"):
+    if not query:
+        st.warning("Please enter a question.")
+    else:
+        with st.spinner("Working on it..."):
+            result = agent.run(query)
+        st.markdown(result)
